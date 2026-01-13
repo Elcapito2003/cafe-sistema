@@ -66,6 +66,49 @@
         .stat-card:hover {
             transform: translateY(-5px);
         }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                min-height: auto;
+                padding-bottom: 10px;
+            }
+            .sidebar .nav {
+                flex-direction: row !important;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            .sidebar .nav-link {
+                padding: 8px 12px;
+                margin: 3px;
+                font-size: 0.85rem;
+            }
+            .sidebar .nav-link i {
+                margin-right: 5px;
+            }
+            .sidebar hr, .sidebar small {
+                display: none;
+            }
+            .content-area {
+                padding: 10px;
+            }
+            .card-body {
+                padding: 15px;
+            }
+            .table {
+                font-size: 0.85rem;
+            }
+            h2 {
+                font-size: 1.4rem;
+            }
+            .stat-card h2 {
+                font-size: 1.8rem;
+            }
+            .btn-lg {
+                padding: 10px 20px;
+                font-size: 1rem;
+            }
+        }
     </style>
 </head>
 <body>
