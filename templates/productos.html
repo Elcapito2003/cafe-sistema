@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+
+{% block title %}Productos - Sistema Cafeteria{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="bi bi-box-seam"></i> Gestion de Productos</h2>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Crear Nuevo Producto</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="action" value="crear_producto">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre</label>
+                        <input type="text" name="nombre" class="form-control" required>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="form-label">Unidad</label>
+                            <input type="text" name="unidad" class="form-control" placeholder="ej: kg, litro, pza" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Uds/Paquete</label>
+                            <input type="number" name="unidades_paquete" class="form-control" value="1" min="1">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Contenido por Unidad</label>
+                        <input type="text" name="contenido_unidad" class="form-control" placeholder="ej: 500g, 1L">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-plus-circle"></i> Crear Producto
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Asignar Proveedor a Producto</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="action" value="asignar_proveedor">
+                    <div class="mb-3">
+                        <label class="form-label">Producto</label>
+                        <select name="producto_id" class="form-select" required>
+                            <option value="">Seleccionar...</option>
+                            {% for pi in productos_info %}
+                            <option value="{{ pi.producto.id }}">{{ pi.producto.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Proveedor</label>
+                        <select name="proveedor_id" class="form-select" required>
+                            <option value="">Seleccionar...</option>
+                            {% for p in proveedores %}
+                            <option value="{{ p.id }}">{{ p.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="form-label">Precio ($)</label>
+                            <input type="number" name="precio" class="form-control" step="0.01" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Tiempo Entrega (dias)</label>
+                            <input type="number" name="tiempo_entrega" class="form-control" value="1" min="1">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="bi bi-link"></i> Asignar Proveedor
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Productos Registrados</h5>
+    </div>
+    <div class="card-body">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Unidad</th>
+                    <th>Presentacion</th>
+                    <th>Proveedores</th>
+                    <th>Mejor Precio</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for pi in productos_info %}
+                <tr>
+                    <td><strong>{{ pi.producto.nombre }}</strong></td>
+                    <td>{{ pi.producto.unidad }}</td>
+                    <td>{{ pi.producto.unidades_paquete }} x {{ pi.producto.contenido_unidad or pi.producto.unidad }}</td>
+                    <td><small>{{ pi.proveedores_str }}</small></td>
+                    <td>
+                        {% if pi.mejor_precio > 0 %}
+                        <span class="badge bg-success">${{ '{:,.2f}'.format(pi.mejor_precio) }}</span>
+                        {% else %}
+                        <span class="badge bg-secondary">-</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

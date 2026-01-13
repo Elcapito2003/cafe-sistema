@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block title %}Historial - Sistema Cafeteria{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="bi bi-clock-history"></i> Historial de Compras</h2>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Todas las Compras Registradas</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Usuario</th>
+                        <th>Producto</th>
+                        <th>Proveedor</th>
+                        <th>Cantidad</th>
+                        <th>Costo Unit.</th>
+                        <th>IVA %</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in compras %}
+                    <tr>
+                        <td>{{ c.fecha.strftime('%Y-%m-%d %H:%M') if c.fecha else '-' }}</td>
+                        <td><span class="badge bg-secondary">{{ c.usuario or 'N/A' }}</span></td>
+                        <td>{{ c.producto }}</td>
+                        <td>{{ c.proveedor }}</td>
+                        <td>{{ c.cantidad }}</td>
+                        <td>${{ '{:,.2f}'.format(c.costo_unitario) if c.costo_unitario else '-' }}</td>
+                        <td>{{ c.iva_porcentaje }}%</td>
+                        <td><strong>${{ '{:,.2f}'.format(c.total_final) }}</strong></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if not compras %}
+        <p class="text-muted text-center py-4">No hay compras registradas</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

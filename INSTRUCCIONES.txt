@@ -1,0 +1,107 @@
+============================================
+SISTEMA DE CAFETERIA - INSTRUCCIONES
+============================================
+
+1. PROBAR LOCALMENTE
+--------------------
+Abre una terminal en esta carpeta y ejecuta:
+
+    pip install -r requirements.txt
+    python app.py
+
+Luego abre en tu navegador: http://127.0.0.1:5000
+
+Usuario: admin
+Password: admin123
+
+
+2. SUBIR A INTERNET (GRATIS) - OPCION RENDER
+--------------------------------------------
+
+Paso 1: Crear cuenta en GitHub (si no tienes)
+   - Ve a https://github.com
+   - Crea una cuenta gratuita
+
+Paso 2: Subir el codigo a GitHub
+   - Crea un nuevo repositorio en GitHub
+   - Sube la carpeta cafe_web completa
+
+Paso 3: Crear cuenta en Render
+   - Ve a https://render.com
+   - Registrate con tu cuenta de GitHub
+
+Paso 4: Crear el servicio
+   - Click en "New" -> "Blueprint"
+   - Conecta tu repositorio de GitHub
+   - Render detectara el archivo render.yaml y configurara todo automaticamente
+
+Paso 5: Esperar el deploy
+   - Render creara la base de datos y la app
+   - En unos minutos tendras tu link tipo: https://cafe-sistema.onrender.com
+
+
+3. OPCION ALTERNATIVA: RAILWAY
+------------------------------
+
+Paso 1: Ve a https://railway.app
+Paso 2: Conecta con GitHub
+Paso 3: Click en "New Project" -> "Deploy from GitHub repo"
+Paso 4: Selecciona tu repositorio
+Paso 5: Railway detectara que es Flask y lo configurara
+Paso 6: En "Variables" agrega:
+   - DATABASE_URL: (Railway te da una gratis, click en "Add PostgreSQL")
+   - SECRET_KEY: (escribe cualquier texto largo aleatorio)
+
+
+4. USUARIOS Y ACCESO
+--------------------
+
+Una vez online, las 3 personas pueden acceder asi:
+
+1. Tu (admin):
+   - Usuario: admin
+   - Password: admin123 (cambialo despues desde la app)
+
+2. Otras personas:
+   - Entra como admin
+   - Ve a "Usuarios"
+   - Crea usuarios nuevos con rol "empleado" o "admin"
+
+
+5. NOTAS IMPORTANTES
+--------------------
+
+- El plan gratis de Render "duerme" la app si no se usa por 15 min
+  La primera vez que alguien entre puede tardar ~30 segundos en despertar
+
+- Para enviar emails a proveedores, necesitas configurar Gmail:
+  1. Activa verificacion en 2 pasos en tu Gmail
+  2. Genera una "App Password" en https://myaccount.google.com/apppasswords
+  3. Usa esa password en la app (no tu password normal de Gmail)
+
+- La base de datos gratuita tiene limite de almacenamiento
+  Render: 1GB, Railway: 1GB, Supabase: 500MB
+  Para una cafeteria es mas que suficiente
+
+
+ESTRUCTURA DEL PROYECTO
+-----------------------
+cafe_web/
+  app.py           -> Aplicacion principal
+  config.py        -> Configuracion
+  models.py        -> Modelos de base de datos
+  requirements.txt -> Dependencias
+  Procfile         -> Para Render/Heroku
+  render.yaml      -> Config automatica para Render
+  templates/       -> Paginas HTML
+  static/          -> CSS, imagenes
+
+
+SOPORTE
+-------
+Si tienes problemas, revisa:
+1. Que todas las dependencias esten instaladas (pip install -r requirements.txt)
+2. Que la variable DATABASE_URL este configurada en produccion
+3. Los logs de error en Render/Railway
+
+============================================

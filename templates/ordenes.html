@@ -1,0 +1,266 @@
+{% extends 'base.html' %}
+
+{% block title %}Orden de Compra - Sistema Cafeteria{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="bi bi-envelope"></i> Orden de Compra</h2>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Agregar Item a la Orden</h5>
+    </div>
+    <div class="card-body">
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <label class="form-label">Producto</label>
+                <select id="producto_select" class="form-select">
+                    <option value="">Seleccionar...</option>
+                    {% for p in productos %}
+                    <option value="{{ p.id }}">{{ p.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Proveedor</label>
+                <select id="proveedor_select" class="form-select">
+                    <option value="">Primero selecciona producto</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Cantidad</label>
+                <input type="number" id="cantidad" class="form-control" step="0.01">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Precio</label>
+                <input type="number" id="precio" class="form-control" step="0.01">
+            </div>
+        </div>
+        <button class="btn btn-success" onclick="agregarItem()">
+            <i class="bi bi-plus"></i> Agregar a la Orden
+        </button>
+        <span id="tiempo_info" class="ms-3 text-muted"></span>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Items en la Orden</h5>
+        <span class="badge bg-primary fs-5" id="total_orden">Total: $0.00</span>
+    </div>
+    <div class="card-body">
+        <table class="table" id="tabla_orden">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Cantidad</th>
+                    <th>Proveedor</th>
+                    <th>Precio</th>
+                    <th>Subtotal</th>
+                    <th>Entrega</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody id="orden_body">
+            </tbody>
+        </table>
+        <p class="text-muted text-center" id="sin_items">No hay items en la orden</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Enviar Pedidos</h5>
+    </div>
+    <div class="card-body">
+        <div class="row mb-3">
+            <div class="col-md-4">
+                <label class="form-label">Tu Gmail</label>
+                <input type="email" id="email_from" class="form-control" value="elcapito200313@gmail.com">
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">App Password</label>
+                <input type="password" id="email_pass" class="form-control" value="ifwfcuvobgfssylm">
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <div class="btn-group w-100">
+                    <button class="btn btn-primary" onclick="enviarOrden(false)">
+                        <i class="bi bi-envelope"></i> Enviar a MI correo
+                    </button>
+                    <button class="btn btn-success" onclick="enviarOrden(true)">
+                        <i class="bi bi-send"></i> Enviar a PROVEEDORES
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="resultModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Resultado del Envio</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="result_content">
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let ordenItems = [];
+let proveedoresData = {};
+
+document.getElementById('producto_select').addEventListener('change', async function() {
+    const productoId = this.value;
+    const proveedorSelect = document.getElementById('proveedor_select');
+
+    if (!productoId) {
+        proveedorSelect.innerHTML = '<option value="">Primero selecciona producto</option>';
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/producto/${productoId}/proveedores`);
+        const proveedores = await response.json();
+
+        proveedoresData = {};
+        proveedores.forEach(p => {
+            proveedoresData[p.nombre] = {precio: p.precio, tiempo: p.tiempo_entrega};
+        });
+
+        if (proveedores.length === 0) {
+            proveedorSelect.innerHTML = '<option value="">Sin proveedores</option>';
+            return;
+        }
+
+        proveedorSelect.innerHTML = proveedores.map(p =>
+            `<option value="${p.nombre}">${p.nombre} ($${p.precio.toFixed(0)}, ${p.tiempo_entrega}d)</option>`
+        ).join('');
+
+        actualizarPrecioTiempo();
+    } catch (error) {
+        console.error('Error:', error);
+    }
+});
+
+document.getElementById('proveedor_select').addEventListener('change', actualizarPrecioTiempo);
+
+function actualizarPrecioTiempo() {
+    const provNombre = document.getElementById('proveedor_select').value;
+    if (provNombre && proveedoresData[provNombre]) {
+        document.getElementById('precio').value = proveedoresData[provNombre].precio;
+        document.getElementById('tiempo_info').textContent = `Entrega: ${proveedoresData[provNombre].tiempo} dias`;
+    }
+}
+
+function agregarItem() {
+    const productoSelect = document.getElementById('producto_select');
+    const producto = productoSelect.options[productoSelect.selectedIndex].text;
+    const proveedor = document.getElementById('proveedor_select').value;
+    const cantidad = parseFloat(document.getElementById('cantidad').value);
+    const precio = parseFloat(document.getElementById('precio').value);
+
+    if (!producto || producto === 'Seleccionar...' || !proveedor || !cantidad || !precio) {
+        alert('Completa todos los campos');
+        return;
+    }
+
+    const tiempo = proveedoresData[proveedor]?.tiempo || 1;
+    const subtotal = cantidad * precio;
+
+    ordenItems.push({
+        producto: producto,
+        proveedor: proveedor,
+        cantidad: cantidad,
+        precio: precio,
+        subtotal: subtotal,
+        tiempo: tiempo
+    });
+
+    renderizarOrden();
+    document.getElementById('cantidad').value = '';
+}
+
+function eliminarItem(index) {
+    ordenItems.splice(index, 1);
+    renderizarOrden();
+}
+
+function renderizarOrden() {
+    const tbody = document.getElementById('orden_body');
+    const sinItems = document.getElementById('sin_items');
+
+    if (ordenItems.length === 0) {
+        tbody.innerHTML = '';
+        sinItems.style.display = 'block';
+        document.getElementById('total_orden').textContent = 'Total: $0.00';
+        return;
+    }
+
+    sinItems.style.display = 'none';
+    tbody.innerHTML = ordenItems.map((item, idx) => `
+        <tr>
+            <td>${item.producto}</td>
+            <td>${item.cantidad}</td>
+            <td>${item.proveedor}</td>
+            <td>$${item.precio.toFixed(2)}</td>
+            <td>$${item.subtotal.toFixed(2)}</td>
+            <td>${item.tiempo}d</td>
+            <td><button class="btn btn-sm btn-danger" onclick="eliminarItem(${idx})"><i class="bi bi-trash"></i></button></td>
+        </tr>
+    `).join('');
+
+    const total = ordenItems.reduce((sum, item) => sum + item.subtotal, 0);
+    document.getElementById('total_orden').textContent = `Total: $${total.toLocaleString('es-MX', {minimumFractionDigits: 2})}`;
+}
+
+async function enviarOrden(aProveedores) {
+    if (ordenItems.length === 0) {
+        alert('Agrega items a la orden primero');
+        return;
+    }
+
+    const data = {
+        items: ordenItems,
+        email_from: document.getElementById('email_from').value,
+        email_pass: document.getElementById('email_pass').value,
+        enviar_a_proveedores: aProveedores
+    };
+
+    try {
+        const response = await fetch('/api/enviar-orden', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+
+        let html = '';
+        if (result.enviados.length > 0) {
+            html += `<div class="alert alert-success">Enviado a: ${result.enviados.join(', ')}</div>`;
+        }
+        if (result.errores.length > 0) {
+            html += `<div class="alert alert-danger">Errores: ${result.errores.join(', ')}</div>`;
+        }
+        if (result.enviados.length === 0 && result.errores.length === 0) {
+            html = '<div class="alert alert-warning">No se envio nada. Verifica configuracion.</div>';
+        }
+
+        document.getElementById('result_content').innerHTML = html;
+        new bootstrap.Modal(document.getElementById('resultModal')).show();
+
+        if (result.success) {
+            ordenItems = [];
+            renderizarOrden();
+        }
+    } catch (error) {
+        alert('Error al enviar: ' + error.message);
+    }
+}
+</script>
+{% endblock %}

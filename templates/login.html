@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block title %}Login - Sistema Cafeteria{% endblock %}
+
+{% block fullpage %}
+<div class="min-vh-100 d-flex align-items-center justify-content-center" style="background: linear-gradient(135deg, #6f4e37, #c4a77d);">
+    <div class="card shadow-lg" style="width: 400px;">
+        <div class="card-header text-center py-4">
+            <h3><i class="bi bi-cup-hot"></i> Sistema Cafeteria</h3>
+        </div>
+        <div class="card-body p-4">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST">
+                <div class="mb-3">
+                    <label class="form-label"><i class="bi bi-person"></i> Usuario</label>
+                    <input type="text" name="username" class="form-control form-control-lg" required autofocus>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label"><i class="bi bi-lock"></i> Contrasena</label>
+                    <input type="password" name="password" class="form-control form-control-lg" required>
+                </div>
+                <button type="submit" class="btn btn-primary btn-lg w-100">
+                    <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesion
+                </button>
+            </form>
+        </div>
+        <div class="card-footer text-center text-muted py-3">
+            <small>Usuario por defecto: admin / admin123</small>
+        </div>
+    </div>
+</div>
+{% endblock %}
