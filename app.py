@@ -218,6 +218,42 @@ def productos():
                          proveedores=proveedores_list)
 
 # --- PROVEEDORES ---
+@app.route('/productos/eliminar/<int:id>')
+@login_required
+def eliminar_producto(id):
+    if current_user.rol != 'admin':
+        flash('Acceso denegado', 'error')
+        return redirect(url_for('dashboard'))
+
+    producto = Producto.query.get_or_404(id)
+    ProductoProveedor.query.filter_by(producto_id=id).delete()
+    db.session.delete(producto)
+    db.session.commit()
+    flash(f'Producto "{producto.nombre}" eliminado', 'success')
+    return redirect(url_for('productos'))
+
+
+@app.route('/productos/editar/<int:id>', methods=['GET', 'POST'])
+@login_required
+def editar_producto(id):
+    if current_user.rol != 'admin':
+        flash('Acceso denegado', 'error')
+        return redirect(url_for('dashboard'))
+
+    producto = Producto.query.get_or_404(id)
+
+    if request.method == 'POST':
+        producto.nombre = request.form.get('nombre')
+        producto.unidad = request.form.get('unidad')
+        producto.unidades_paquete = int(request.form.get('unidades_paquete', 1))
+        producto.contenido_unidad = request.form.get('contenido_unidad', '')
+        db.session.commit()
+        flash(f'Producto "{producto.nombre}" actualizado', 'success')
+        return redirect(url_for('productos'))
+
+    return render_template('editar_producto.html', producto=producto)
+
+
 @app.route('/proveedores', methods=['GET', 'POST'])
 @login_required
 def proveedores():
