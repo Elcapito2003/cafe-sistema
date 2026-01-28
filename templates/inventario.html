@@ -171,13 +171,19 @@
 
 {% block scripts %}
 <script>
-document.getElementById('mov_producto').addEventListener('change', function() {
-    var sel = this.options[this.selectedIndex];
-    document.getElementById('mov_unidad').textContent = sel.dataset.unidad || '--';
-});
-document.getElementById('min_producto').addEventListener('change', function() {
-    var sel = this.options[this.selectedIndex];
-    document.getElementById('min_unidad').textContent = sel.dataset.unidad || '--';
-});
+var movProd = document.getElementById('mov_producto');
+if (movProd) {
+    movProd.addEventListener('change', function() {
+        var sel = this.options[this.selectedIndex];
+        document.getElementById('mov_unidad').textContent = sel.dataset.unidad || '--';
+    });
+}
+var minProd = document.getElementById('min_producto');
+if (minProd) {
+    minProd.addEventListener('change', function() {
+        var sel = this.options[this.selectedIndex];
+        document.getElementById('min_unidad').textContent = sel.dataset.unidad || '--';
+    });
+}
 </script>
 {% endblock %}
