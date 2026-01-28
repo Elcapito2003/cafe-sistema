@@ -16,10 +16,10 @@
                 <form method="POST" action="{{ url_for('registrar_movimiento') }}">
                     <div class="mb-3">
                         <label class="form-label">Producto</label>
-                        <select name="producto_id" class="form-select" required>
+                        <select name="producto_id" id="mov_producto" class="form-select" required>
                             <option value="">Seleccionar...</option>
                             {% for pi in productos_inv %}
-                            <option value="{{ pi.producto.id }}">{{ pi.producto.nombre }} ({{ pi.producto.stock_actual }} {{ pi.producto.unidad }})</option>
+                            <option value="{{ pi.producto.id }}" data-unidad="{{ pi.producto.unidad }}">{{ pi.producto.nombre }} ({{ pi.producto.stock_actual }} {{ pi.producto.unidad }})</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -33,7 +33,10 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Cantidad</label>
-                        <input type="number" name="cantidad" class="form-control" step="0.01" min="0.01" required>
+                        <div class="input-group">
+                            <input type="number" name="cantidad" class="form-control" step="0.01" min="0.01" required>
+                            <span class="input-group-text" id="mov_unidad">--</span>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Motivo</label>
@@ -55,16 +58,19 @@
                 <form method="POST" action="{{ url_for('actualizar_stock_minimo') }}">
                     <div class="mb-3">
                         <label class="form-label">Producto</label>
-                        <select name="producto_id" class="form-select" required>
+                        <select name="producto_id" id="min_producto" class="form-select" required>
                             <option value="">Seleccionar...</option>
                             {% for pi in productos_inv %}
-                            <option value="{{ pi.producto.id }}">{{ pi.producto.nombre }}</option>
+                            <option value="{{ pi.producto.id }}" data-unidad="{{ pi.producto.unidad }}">{{ pi.producto.nombre }}</option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Stock Minimo</label>
-                        <input type="number" name="stock_minimo" class="form-control" step="0.01" min="0" required>
+                        <div class="input-group">
+                            <input type="number" name="stock_minimo" class="form-control" step="0.01" min="0" required>
+                            <span class="input-group-text" id="min_unidad">--</span>
+                        </div>
                     </div>
                     <button type="submit" class="btn btn-warning w-100">
                         <i class="bi bi-exclamation-triangle"></i> Guardar Minimo
@@ -161,4 +167,17 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('mov_producto').addEventListener('change', function() {
+    var sel = this.options[this.selectedIndex];
+    document.getElementById('mov_unidad').textContent = sel.dataset.unidad || '--';
+});
+document.getElementById('min_producto').addEventListener('change', function() {
+    var sel = this.options[this.selectedIndex];
+    document.getElementById('min_unidad').textContent = sel.dataset.unidad || '--';
+});
+</script>
 {% endblock %}
