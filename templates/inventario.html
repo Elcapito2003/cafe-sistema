@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+
+{% block title %}Inventario - Sistema Cafeteria{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="bi bi-boxes"></i> Inventario</h2>
+
+<div class="row">
+    <!-- Registrar movimiento -->
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Registrar Movimiento</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('registrar_movimiento') }}">
+                    <div class="mb-3">
+                        <label class="form-label">Producto</label>
+                        <select name="producto_id" class="form-select" required>
+                            <option value="">Seleccionar...</option>
+                            {% for pi in productos_inv %}
+                            <option value="{{ pi.producto.id }}">{{ pi.producto.nombre }} ({{ pi.producto.stock_actual }} {{ pi.producto.unidad }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Tipo</label>
+                        <select name="tipo" class="form-select" required>
+                            <option value="entrada">Entrada</option>
+                            <option value="salida">Salida</option>
+                            <option value="ajuste">Ajuste</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Cantidad</label>
+                        <input type="number" name="cantidad" class="form-control" step="0.01" min="0.01" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Motivo</label>
+                        <input type="text" name="motivo" class="form-control" placeholder="ej: Recepcion de pedido, Uso diario...">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-arrow-left-right"></i> Registrar
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        {% if current_user.rol == 'admin' %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Configurar Stock Minimo</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('actualizar_stock_minimo') }}">
+                    <div class="mb-3">
+                        <label class="form-label">Producto</label>
+                        <select name="producto_id" class="form-select" required>
+                            <option value="">Seleccionar...</option>
+                            {% for pi in productos_inv %}
+                            <option value="{{ pi.producto.id }}">{{ pi.producto.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Stock Minimo</label>
+                        <input type="number" name="stock_minimo" class="form-control" step="0.01" min="0" required>
+                    </div>
+                    <button type="submit" class="btn btn-warning w-100">
+                        <i class="bi bi-exclamation-triangle"></i> Guardar Minimo
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Tabla de inventario -->
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Estado del Inventario</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Producto</th>
+                                <th>Unidad</th>
+                                <th>Stock Actual</th>
+                                <th>Stock Minimo</th>
+                                <th>Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pi in productos_inv %}
+                            <tr>
+                                <td><strong>{{ pi.producto.nombre }}</strong></td>
+                                <td>{{ pi.producto.unidad }}</td>
+                                <td>{{ pi.producto.stock_actual }}</td>
+                                <td>{{ pi.producto.stock_minimo }}</td>
+                                <td>
+                                    {% if pi.estado == 'bajo' %}
+                                    <span class="badge bg-danger"><i class="bi bi-exclamation-circle"></i> Bajo</span>
+                                    {% else %}
+                                    <span class="badge bg-success"><i class="bi bi-check-circle"></i> OK</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ultimos movimientos -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Ultimos Movimientos</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Producto</th>
+                                <th>Tipo</th>
+                                <th>Cantidad</th>
+                                <th>Motivo</th>
+                                <th>Usuario</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for m in movimientos %}
+                            <tr>
+                                <td><small>{{ m.fecha.strftime('%d/%m/%Y %H:%M') }}</small></td>
+                                <td>{{ m.producto.nombre }}</td>
+                                <td>
+                                    {% if m.tipo == 'entrada' %}
+                                    <span class="badge bg-success">Entrada</span>
+                                    {% elif m.tipo == 'salida' %}
+                                    <span class="badge bg-warning text-dark">Salida</span>
+                                    {% elif m.tipo == 'merma' %}
+                                    <span class="badge bg-danger">Merma</span>
+                                    {% else %}
+                                    <span class="badge bg-info">Ajuste</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ m.cantidad }}</td>
+                                <td><small>{{ m.motivo or '-' }}</small></td>
+                                <td><small>{{ m.usuario }}</small></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

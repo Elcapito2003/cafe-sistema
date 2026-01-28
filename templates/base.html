@@ -143,6 +143,9 @@
                     <a class="nav-link {% if request.endpoint == 'ordenes' %}active{% endif %}" href="{{ url_for('ordenes') }}">
                         <i class="bi bi-envelope"></i> Orden de Compra
                     </a>
+                    <a class="nav-link {% if request.endpoint == 'inventario' %}active{% endif %}" href="{{ url_for('inventario') }}">
+                        <i class="bi bi-boxes"></i> Inventario
+                    </a>
                     {% if current_user.rol == 'admin' %}
                     <hr class="mx-3">
                     <small class="text-muted px-3">ADMIN</small>

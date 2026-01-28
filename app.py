@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from config import Config
-from models import db, Usuario, Proveedor, Producto, ProductoProveedor, Compra
+from models import db, Usuario, Proveedor, Producto, ProductoProveedor, Compra, MovimientoInventario
 from datetime import datetime
 import smtplib
 from email.mime.text import MIMEText
@@ -71,11 +71,18 @@ def dashboard():
 
     ultimas_compras = Compra.query.order_by(Compra.id.desc()).limit(5).all()
 
+    # Alertas de stock bajo
+    productos_stock_bajo = Producto.query.filter(
+        Producto.stock_minimo > 0,
+        Producto.stock_actual <= Producto.stock_minimo
+    ).all()
+
     return render_template('dashboard.html',
                          total_productos=total_productos,
                          total_proveedores=total_proveedores,
                          total_compras=total_compras,
-                         ultimas_compras=ultimas_compras)
+                         ultimas_compras=ultimas_compras,
+                         productos_stock_bajo=productos_stock_bajo)
 
 # --- COMPRAS ---
 @app.route('/compras', methods=['GET', 'POST'])
@@ -108,6 +115,17 @@ def compras():
 
             # Actualizar costo actual del producto
             producto.costo_actual = costo
+
+            # Actualizar inventario automaticamente
+            producto.stock_actual += cantidad
+            mov = MovimientoInventario(
+                producto_id=producto.id,
+                tipo='entrada',
+                cantidad=cantidad,
+                motivo=f'Compra a {proveedor_nombre}',
+                usuario=current_user.username
+            )
+            db.session.add(mov)
             db.session.commit()
 
             flash(f'Compra registrada: ${total:,.2f}', 'success')
@@ -402,6 +420,96 @@ def enviar_orden():
         'enviados': enviados,
         'errores': errores
     })
+
+# --- INVENTARIO ---
+@app.route('/inventario')
+@login_required
+def inventario():
+    productos_list = Producto.query.all()
+    productos_inv = []
+    for p in productos_list:
+        estado = 'bajo' if p.stock_minimo > 0 and p.stock_actual <= p.stock_minimo else 'ok'
+        productos_inv.append({
+            'producto': p,
+            'estado': estado
+        })
+
+    movimientos = MovimientoInventario.query.order_by(MovimientoInventario.id.desc()).limit(20).all()
+    return render_template('inventario.html', productos_inv=productos_inv, movimientos=movimientos)
+
+@app.route('/inventario/movimiento', methods=['POST'])
+@login_required
+def registrar_movimiento():
+    producto_id = request.form.get('producto_id')
+    tipo = request.form.get('tipo')
+    cantidad = float(request.form.get('cantidad', 0))
+    motivo = request.form.get('motivo', '')
+
+    if not producto_id or not tipo or cantidad <= 0:
+        flash('Verifica los datos del movimiento', 'error')
+        return redirect(url_for('inventario'))
+
+    producto = Producto.query.get(producto_id)
+    if not producto:
+        flash('Producto no encontrado', 'error')
+        return redirect(url_for('inventario'))
+
+    if tipo in ('salida', 'merma'):
+        if producto.stock_actual < cantidad:
+            flash(f'Stock insuficiente. Stock actual: {producto.stock_actual}', 'error')
+            return redirect(url_for('inventario'))
+        producto.stock_actual -= cantidad
+    elif tipo in ('entrada', 'ajuste'):
+        producto.stock_actual += cantidad
+
+    mov = MovimientoInventario(
+        producto_id=producto.id,
+        tipo=tipo,
+        cantidad=cantidad,
+        motivo=motivo,
+        usuario=current_user.username
+    )
+    db.session.add(mov)
+    db.session.commit()
+
+    flash(f'{tipo.capitalize()} de {cantidad} {producto.unidad} de "{producto.nombre}" registrada', 'success')
+    return redirect(url_for('inventario'))
+
+@app.route('/inventario/stock-minimo', methods=['POST'])
+@login_required
+def actualizar_stock_minimo():
+    if current_user.rol != 'admin':
+        flash('Acceso denegado', 'error')
+        return redirect(url_for('inventario'))
+
+    producto_id = request.form.get('producto_id')
+    stock_minimo = float(request.form.get('stock_minimo', 0))
+
+    producto = Producto.query.get(producto_id)
+    if producto:
+        producto.stock_minimo = stock_minimo
+        db.session.commit()
+        flash(f'Stock minimo de "{producto.nombre}" actualizado a {stock_minimo}', 'success')
+    else:
+        flash('Producto no encontrado', 'error')
+
+    return redirect(url_for('inventario'))
+
+@app.route('/api/inventario/estado')
+@login_required
+def api_inventario_estado():
+    productos = Producto.query.all()
+    resultado = []
+    for p in productos:
+        resultado.append({
+            'id': p.id,
+            'nombre': p.nombre,
+            'unidad': p.unidad,
+            'stock_actual': p.stock_actual,
+            'stock_minimo': p.stock_minimo,
+            'estado': 'bajo' if p.stock_minimo > 0 and p.stock_actual <= p.stock_minimo else 'ok'
+        })
+    return jsonify(resultado)
 
 # --- HISTORIAL ---
 @app.route('/historial')

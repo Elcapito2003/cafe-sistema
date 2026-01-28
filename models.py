@@ -46,8 +46,11 @@ class Producto(db.Model):
     unidades_paquete = db.Column(db.Integer, default=1)
     contenido_unidad = db.Column(db.String(50))
     costo_actual = db.Column(db.Float, default=0)
+    stock_actual = db.Column(db.Float, default=0)
+    stock_minimo = db.Column(db.Float, default=0)
 
     proveedores = db.relationship('ProductoProveedor', back_populates='producto')
+    movimientos = db.relationship('MovimientoInventario', back_populates='producto')
 
 
 class ProductoProveedor(db.Model):
@@ -78,3 +81,17 @@ class Compra(db.Model):
     total_final = db.Column(db.Float)
     fecha = db.Column(db.DateTime, default=datetime.utcnow)
     usuario = db.Column(db.String(80))
+
+
+class MovimientoInventario(db.Model):
+    __tablename__ = 'movimientos_inventario'
+
+    id = db.Column(db.Integer, primary_key=True)
+    producto_id = db.Column(db.Integer, db.ForeignKey('productos.id'), nullable=False)
+    tipo = db.Column(db.String(20), nullable=False)  # entrada, salida, merma, ajuste
+    cantidad = db.Column(db.Float, nullable=False)
+    motivo = db.Column(db.String(200))
+    fecha = db.Column(db.DateTime, default=datetime.utcnow)
+    usuario = db.Column(db.String(80))
+
+    producto = db.relationship('Producto', back_populates='movimientos')
