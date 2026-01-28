@@ -22,6 +22,17 @@ def load_user(user_id):
 # Crear tablas y admin por defecto
 with app.app_context():
     db.create_all()
+    # Migrar columnas nuevas si no existen (para BD existentes)
+    try:
+        db.session.execute(db.text("ALTER TABLE productos ADD COLUMN stock_actual FLOAT DEFAULT 0"))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+    try:
+        db.session.execute(db.text("ALTER TABLE productos ADD COLUMN stock_minimo FLOAT DEFAULT 0"))
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
     if not Usuario.query.filter_by(username='admin').first():
         admin = Usuario(username='admin', rol='admin')
         admin.set_password('admin123')
