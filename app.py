@@ -346,7 +346,31 @@ def eliminar_proveedor(id):
 @login_required
 def ordenes():
     productos = Producto.query.all()
-    return render_template('ordenes.html', productos=productos)
+
+    # Sugerencias de pedido: productos con stock bajo
+    productos_bajos = Producto.query.filter(
+        Producto.stock_minimo > 0,
+        Producto.stock_actual < Producto.stock_minimo
+    ).all()
+
+    sugerencias = []
+    for p in productos_bajos:
+        cantidad_sugerida = p.stock_minimo - p.stock_actual
+        # Buscar mejor proveedor (precio mas bajo)
+        mejor_rel = ProductoProveedor.query.filter_by(producto_id=p.id).order_by(ProductoProveedor.precio.asc()).first()
+        sugerencias.append({
+            'producto_id': p.id,
+            'producto_nombre': p.nombre,
+            'unidad': p.unidad,
+            'stock_actual': p.stock_actual,
+            'stock_minimo': p.stock_minimo,
+            'cantidad_sugerida': cantidad_sugerida,
+            'proveedor_nombre': mejor_rel.proveedor.nombre if mejor_rel else '',
+            'precio': mejor_rel.precio if mejor_rel else 0,
+            'tiempo': mejor_rel.tiempo_entrega if mejor_rel else 0
+        })
+
+    return render_template('ordenes.html', productos=productos, sugerencias=sugerencias)
 
 @app.route('/api/enviar-orden', methods=['POST'])
 @login_required

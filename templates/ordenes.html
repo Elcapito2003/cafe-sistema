@@ -5,6 +5,59 @@
 {% block content %}
 <h2 class="mb-4"><i class="bi bi-envelope"></i> Orden de Compra</h2>
 
+{% if sugerencias %}
+<div class="card mb-4 border-warning">
+    <div class="card-header bg-warning text-dark">
+        <h5 class="mb-0"><i class="bi bi-lightbulb"></i> Sugerencias de Pedido - {{ sugerencias|length }} producto(s) con stock bajo</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover mb-2">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Stock Actual</th>
+                        <th>Stock Minimo</th>
+                        <th>Pedir</th>
+                        <th>Proveedor</th>
+                        <th>Precio</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in sugerencias %}
+                    <tr>
+                        <td><strong>{{ s.producto_nombre }}</strong></td>
+                        <td><span class="text-danger fw-bold">{{ s.stock_actual }}</span> {{ s.unidad }}</td>
+                        <td>{{ s.stock_minimo }} {{ s.unidad }}</td>
+                        <td><span class="badge bg-primary fs-6">{{ s.cantidad_sugerida }} {{ s.unidad }}</span></td>
+                        <td>{{ s.proveedor_nombre or 'Sin proveedor' }}</td>
+                        <td>{{ '$%.2f'|format(s.precio) if s.precio else '-' }}</td>
+                        <td>
+                            {% if s.proveedor_nombre and s.precio %}
+                            <button class="btn btn-sm btn-success" onclick="agregarSugerencia('{{ s.producto_nombre }}', '{{ s.proveedor_nombre }}', {{ s.cantidad_sugerida }}, {{ s.precio }}, {{ s.tiempo }})">
+                                <i class="bi bi-plus-circle"></i> Agregar
+                            </button>
+                            {% else %}
+                            <span class="text-muted">Sin proveedor</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <button class="btn btn-warning btn-sm" onclick="agregarTodasSugerencias()">
+            <i class="bi bi-cart-plus"></i> Agregar todas a la orden
+        </button>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-success mb-4">
+    <i class="bi bi-check-circle"></i> <strong>Stock OK</strong> - Todos los productos estan dentro del nivel minimo.
+</div>
+{% endif %}
+
 <div class="card mb-4">
     <div class="card-header">
         <h5 class="mb-0">Agregar Item a la Orden</h5>
@@ -113,6 +166,41 @@
 <script>
 let ordenItems = [];
 let proveedoresData = {};
+
+// Datos de sugerencias desde el servidor
+const sugerenciasData = [
+    {% for s in sugerencias %}
+    {producto: "{{ s.producto_nombre }}", proveedor: "{{ s.proveedor_nombre }}", cantidad: {{ s.cantidad_sugerida }}, precio: {{ s.precio }}, tiempo: {{ s.tiempo }} },
+    {% endfor %}
+];
+
+function agregarSugerencia(producto, proveedor, cantidad, precio, tiempo) {
+    ordenItems.push({
+        producto: producto,
+        proveedor: proveedor,
+        cantidad: cantidad,
+        precio: precio,
+        subtotal: cantidad * precio,
+        tiempo: tiempo
+    });
+    renderizarOrden();
+}
+
+function agregarTodasSugerencias() {
+    sugerenciasData.forEach(function(s) {
+        if (s.proveedor && s.precio) {
+            ordenItems.push({
+                producto: s.producto,
+                proveedor: s.proveedor,
+                cantidad: s.cantidad,
+                precio: s.precio,
+                subtotal: s.cantidad * s.precio,
+                tiempo: s.tiempo
+            });
+        }
+    });
+    renderizarOrden();
+}
 
 document.getElementById('producto_select').addEventListener('change', async function() {
     const productoId = this.value;
