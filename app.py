@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from config import Config
-from models import db, Usuario, Proveedor, Producto, ProductoProveedor, Compra, MovimientoInventario
+from models import db, Usuario, Proveedor, Producto, ProductoProveedor, Compra, MovimientoInventario, ProductoVenta, RecetaIngrediente
 from datetime import datetime
 import smtplib
 from email.mime.text import MIMEText
@@ -545,6 +545,87 @@ def api_inventario_estado():
             'estado': 'bajo' if p.stock_minimo > 0 and p.stock_actual <= p.stock_minimo else 'ok'
         })
     return jsonify(resultado)
+
+# --- RECETARIO ---
+@app.route('/recetario', methods=['GET', 'POST'])
+@login_required
+def recetario():
+    if current_user.rol != 'admin':
+        flash('Acceso denegado', 'error')
+        return redirect(url_for('dashboard'))
+
+    if request.method == 'POST':
+        action = request.form.get('action')
+
+        if action == 'crear_producto_venta':
+            nombre = request.form.get('nombre')
+            if nombre:
+                if ProductoVenta.query.filter_by(nombre=nombre).first():
+                    flash('Este producto de venta ya existe', 'error')
+                else:
+                    pv = ProductoVenta(nombre=nombre)
+                    db.session.add(pv)
+                    db.session.commit()
+                    flash(f'Producto de venta "{nombre}" creado', 'success')
+            else:
+                flash('El nombre es obligatorio', 'error')
+
+        elif action == 'agregar_ingrediente':
+            producto_venta_id = request.form.get('producto_venta_id')
+            producto_id = request.form.get('producto_id')
+            cantidad = request.form.get('cantidad', 0)
+
+            if producto_venta_id and producto_id and float(cantidad) > 0:
+                existente = RecetaIngrediente.query.filter_by(
+                    producto_venta_id=producto_venta_id, producto_id=producto_id
+                ).first()
+
+                if existente:
+                    existente.cantidad = float(cantidad)
+                else:
+                    ri = RecetaIngrediente(
+                        producto_venta_id=int(producto_venta_id),
+                        producto_id=int(producto_id),
+                        cantidad=float(cantidad)
+                    )
+                    db.session.add(ri)
+
+                db.session.commit()
+                flash('Ingrediente agregado a la receta', 'success')
+            else:
+                flash('Faltan datos para agregar ingrediente', 'error')
+
+        return redirect(url_for('recetario'))
+
+    productos_venta = ProductoVenta.query.all()
+    productos = Producto.query.all()
+    return render_template('recetario.html', productos_venta=productos_venta, productos=productos)
+
+@app.route('/recetario/eliminar-producto/<int:id>')
+@login_required
+def eliminar_producto_venta(id):
+    if current_user.rol != 'admin':
+        flash('Acceso denegado', 'error')
+        return redirect(url_for('dashboard'))
+
+    pv = ProductoVenta.query.get_or_404(id)
+    db.session.delete(pv)
+    db.session.commit()
+    flash(f'Producto de venta "{pv.nombre}" eliminado', 'success')
+    return redirect(url_for('recetario'))
+
+@app.route('/recetario/eliminar-ingrediente/<int:id>')
+@login_required
+def eliminar_ingrediente_receta(id):
+    if current_user.rol != 'admin':
+        flash('Acceso denegado', 'error')
+        return redirect(url_for('dashboard'))
+
+    ri = RecetaIngrediente.query.get_or_404(id)
+    db.session.delete(ri)
+    db.session.commit()
+    flash('Ingrediente eliminado de la receta', 'success')
+    return redirect(url_for('recetario'))
 
 # --- MERMAS ---
 @app.route('/mermas', methods=['GET', 'POST'])

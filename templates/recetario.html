@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+
+{% block title %}Recetario - Sistema Cafeteria{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="bi bi-journal-text"></i> Recetario</h2>
+
+<div class="row">
+    <div class="col-md-4">
+        <!-- Crear producto de venta -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Nuevo Producto de Venta</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="action" value="crear_producto_venta">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre</label>
+                        <input type="text" name="nombre" class="form-control" placeholder="ej: Latte, Cappuccino..." required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-plus-circle"></i> Crear
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Agregar ingrediente a receta -->
+        {% if productos_venta %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Agregar Ingrediente a Receta</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <input type="hidden" name="action" value="agregar_ingrediente">
+                    <div class="mb-3">
+                        <label class="form-label">Producto de Venta</label>
+                        <select name="producto_venta_id" class="form-select" required>
+                            <option value="">Seleccionar...</option>
+                            {% for pv in productos_venta %}
+                            <option value="{{ pv.id }}">{{ pv.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Ingrediente</label>
+                        <select name="producto_id" id="ingrediente_select" class="form-select" required>
+                            <option value="">Seleccionar...</option>
+                            {% for p in productos %}
+                            <option value="{{ p.id }}" data-unidad="{{ p.unidad }}">{{ p.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Cantidad por receta</label>
+                        <div class="input-group">
+                            <input type="number" name="cantidad" class="form-control" step="0.01" min="0.01" required>
+                            <span class="input-group-text" id="ingrediente_unidad">--</span>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="bi bi-plus"></i> Agregar Ingrediente
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-8">
+        {% if productos_venta %}
+            {% for pv in productos_venta %}
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-cup-hot"></i> {{ pv.nombre }}</h5>
+                    <a href="{{ url_for('eliminar_producto_venta', id=pv.id) }}"
+                       class="btn btn-sm btn-danger"
+                       onclick="return confirm('Eliminar {{ pv.nombre }} y toda su receta?')">
+                        <i class="bi bi-trash"></i> Eliminar
+                    </a>
+                </div>
+                <div class="card-body">
+                    {% if pv.ingredientes %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Ingrediente</th>
+                                    <th>Cantidad</th>
+                                    <th>Unidad</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ri in pv.ingredientes %}
+                                <tr>
+                                    <td><strong>{{ ri.producto.nombre }}</strong></td>
+                                    <td>{{ ri.cantidad }}</td>
+                                    <td>{{ ri.producto.unidad }}</td>
+                                    <td>
+                                        <a href="{{ url_for('eliminar_ingrediente_receta', id=ri.id) }}"
+                                           class="btn btn-sm btn-outline-danger"
+                                           onclick="return confirm('Quitar {{ ri.producto.nombre }} de la receta?')">
+                                            <i class="bi bi-x-circle"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0"><i class="bi bi-info-circle"></i> Sin ingredientes. Agrega ingredientes desde el formulario.</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-journal-text" style="font-size: 3rem; color: var(--secondary-color);"></i>
+                <p class="text-muted mt-3">No hay productos de venta. Crea uno para empezar a armar recetas.</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+var ingSelect = document.getElementById('ingrediente_select');
+if (ingSelect) {
+    ingSelect.addEventListener('change', function() {
+        var sel = this.options[this.selectedIndex];
+        document.getElementById('ingrediente_unidad').textContent = sel.dataset.unidad || '--';
+    });
+}
+</script>
+{% endblock %}

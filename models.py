@@ -95,3 +95,26 @@ class MovimientoInventario(db.Model):
     usuario = db.Column(db.String(80))
 
     producto = db.relationship('Producto', back_populates='movimientos')
+
+
+class ProductoVenta(db.Model):
+    __tablename__ = 'productos_venta'
+
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(100), unique=True, nullable=False)
+
+    ingredientes = db.relationship('RecetaIngrediente', back_populates='producto_venta', cascade='all, delete-orphan')
+
+
+class RecetaIngrediente(db.Model):
+    __tablename__ = 'receta_ingredientes'
+
+    id = db.Column(db.Integer, primary_key=True)
+    producto_venta_id = db.Column(db.Integer, db.ForeignKey('productos_venta.id'), nullable=False)
+    producto_id = db.Column(db.Integer, db.ForeignKey('productos.id'), nullable=False)
+    cantidad = db.Column(db.Float, nullable=False)
+
+    producto_venta = db.relationship('ProductoVenta', back_populates='ingredientes')
+    producto = db.relationship('Producto')
+
+    __table_args__ = (db.UniqueConstraint('producto_venta_id', 'producto_id'),)

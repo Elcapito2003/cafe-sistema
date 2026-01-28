@@ -152,6 +152,9 @@
                     {% if current_user.rol == 'admin' %}
                     <hr class="mx-3">
                     <small class="text-muted px-3">ADMIN</small>
+                    <a class="nav-link {% if request.endpoint == 'recetario' %}active{% endif %}" href="{{ url_for('recetario') }}">
+                        <i class="bi bi-journal-text"></i> Recetario
+                    </a>
                     <a class="nav-link {% if request.endpoint == 'historial' %}active{% endif %}" href="{{ url_for('historial') }}">
                         <i class="bi bi-clock-history"></i> Historial
                     </a>
