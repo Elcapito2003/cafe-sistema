@@ -146,6 +146,9 @@
                     <a class="nav-link {% if request.endpoint == 'inventario' %}active{% endif %}" href="{{ url_for('inventario') }}">
                         <i class="bi bi-boxes"></i> Inventario
                     </a>
+                    <a class="nav-link {% if request.endpoint == 'mermas' %}active{% endif %}" href="{{ url_for('mermas') }}">
+                        <i class="bi bi-trash3"></i> Mermas
+                    </a>
                     {% if current_user.rol == 'admin' %}
                     <hr class="mx-3">
                     <small class="text-muted px-3">ADMIN</small>

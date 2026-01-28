@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block title %}Mermas - Sistema Cafeteria{% endblock %}
+
+{% block content %}
+<h2 class="mb-4"><i class="bi bi-trash3"></i> Control de Mermas</h2>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Registrar Merma</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">Producto</label>
+                        <select name="producto_id" id="merma_producto" class="form-select" required>
+                            <option value="">Seleccionar...</option>
+                            {% for p in productos %}
+                            <option value="{{ p.id }}" data-unidad="{{ p.unidad }}" data-stock="{{ p.stock_actual }}">{{ p.nombre }} ({{ p.stock_actual }} {{ p.unidad }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Cantidad</label>
+                        <div class="input-group">
+                            <input type="number" name="cantidad" class="form-control" step="0.01" min="0.01" required>
+                            <span class="input-group-text" id="merma_unidad">--</span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Categoria</label>
+                        <select name="categoria" class="form-select" required>
+                            <option value="">Seleccionar...</option>
+                            <option value="Uso normal">Uso normal</option>
+                            <option value="Caducidad">Caducidad</option>
+                            <option value="Producto danado">Producto danado</option>
+                            <option value="Derrame">Derrame</option>
+                            <option value="Robo/perdida">Robo/perdida</option>
+                            <option value="Otro">Otro</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Observacion</label>
+                        <input type="text" name="observacion" class="form-control" placeholder="Detalle adicional (opcional)">
+                    </div>
+                    <button type="submit" class="btn btn-danger w-100">
+                        <i class="bi bi-trash3"></i> Registrar Merma
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Historial de Mermas</h5>
+            </div>
+            <div class="card-body">
+                {% if mermas %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Producto</th>
+                                <th>Cantidad</th>
+                                <th>Categoria</th>
+                                <th>Observacion</th>
+                                <th>Usuario</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for m in mermas %}
+                            <tr>
+                                <td><small>{{ m.fecha.strftime('%d/%m/%Y %H:%M') }}</small></td>
+                                <td>{{ m.producto.nombre }}</td>
+                                <td>{{ m.cantidad }} {{ m.producto.unidad }}</td>
+                                <td>
+                                    {% set partes = m.motivo.split(': ', 1) if m.motivo else ['', ''] %}
+                                    <span class="badge bg-danger">{{ partes[0] }}</span>
+                                </td>
+                                <td><small>{{ partes[1] if partes|length > 1 else '-' }}</small></td>
+                                <td><small>{{ m.usuario }}</small></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted text-center py-4">No hay mermas registradas</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+var mermaProd = document.getElementById('merma_producto');
+if (mermaProd) {
+    mermaProd.addEventListener('change', function() {
+        var sel = this.options[this.selectedIndex];
+        document.getElementById('merma_unidad').textContent = sel.dataset.unidad || '--';
+    });
+}
+</script>
+{% endblock %}

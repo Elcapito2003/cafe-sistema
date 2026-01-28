@@ -522,6 +522,49 @@ def api_inventario_estado():
         })
     return jsonify(resultado)
 
+# --- MERMAS ---
+@app.route('/mermas', methods=['GET', 'POST'])
+@login_required
+def mermas():
+    if request.method == 'POST':
+        producto_id = request.form.get('producto_id')
+        cantidad = float(request.form.get('cantidad', 0))
+        categoria = request.form.get('categoria', '')
+        observacion = request.form.get('observacion', '')
+
+        if not producto_id or cantidad <= 0:
+            flash('Verifica los datos', 'error')
+            return redirect(url_for('mermas'))
+
+        producto = Producto.query.get(producto_id)
+        if not producto:
+            flash('Producto no encontrado', 'error')
+            return redirect(url_for('mermas'))
+
+        if producto.stock_actual < cantidad:
+            flash(f'Stock insuficiente. Stock actual: {producto.stock_actual} {producto.unidad}', 'error')
+            return redirect(url_for('mermas'))
+
+        producto.stock_actual -= cantidad
+        motivo = f'{categoria}: {observacion}' if observacion else categoria
+
+        mov = MovimientoInventario(
+            producto_id=producto.id,
+            tipo='merma',
+            cantidad=cantidad,
+            motivo=motivo,
+            usuario=current_user.username
+        )
+        db.session.add(mov)
+        db.session.commit()
+
+        flash(f'Merma registrada: {cantidad} {producto.unidad} de "{producto.nombre}" ({categoria})', 'success')
+        return redirect(url_for('mermas'))
+
+    productos = Producto.query.all()
+    mermas_list = MovimientoInventario.query.filter_by(tipo='merma').order_by(MovimientoInventario.id.desc()).all()
+    return render_template('mermas.html', productos=productos, mermas=mermas_list)
+
 # --- HISTORIAL ---
 @app.route('/historial')
 @login_required
