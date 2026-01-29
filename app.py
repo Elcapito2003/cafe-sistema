@@ -772,22 +772,42 @@ def cargar_recetas_iniciales():
     ]
 
     # Crear productos faltantes
-    if not Producto.query.filter_by(nombre='LECHE INFUSIONADA').first():
+    if not Producto.query.filter(Producto.nombre.ilike('LECHE INFUSIONADA')).first():
         db.session.add(Producto(nombre='LECHE INFUSIONADA', unidad='lt'))
-    if not Producto.query.filter_by(nombre='SAL').first():
+    if not Producto.query.filter(Producto.nombre.ilike('SAL')).first():
         db.session.add(Producto(nombre='SAL', unidad='g'))
     db.session.commit()
 
-    productos_db = {p.nombre: p for p in Producto.query.all()}
-    errores = []
+    # Crear diccionario normalizado (sin espacios extra, mayusculas)
+    todos_productos = Producto.query.all()
+    productos_db = {}
+    productos_db_norm = {}
+    for p in todos_productos:
+        productos_db[p.nombre] = p
+        # Normalizar: quitar espacios extra, convertir a mayusculas
+        nombre_norm = ' '.join(p.nombre.upper().split())
+        productos_db_norm[nombre_norm] = p
 
+    # Funcion para buscar producto flexible
+    def buscar_producto(nombre_buscado):
+        # Primero busqueda exacta
+        if nombre_buscado in productos_db:
+            return productos_db[nombre_buscado]
+        # Luego busqueda normalizada
+        nombre_norm = ' '.join(nombre_buscado.upper().split())
+        if nombre_norm in productos_db_norm:
+            return productos_db_norm[nombre_norm]
+        return None
+
+    errores = []
     # Verificar que existan todos los ingredientes
     for ing_receta, ing_sistema in MAPEO.items():
-        if ing_sistema not in productos_db:
+        if not buscar_producto(ing_sistema):
             errores.append(f'Falta producto: {ing_sistema}')
 
     if errores:
-        flash(f'Errores: {", ".join(errores)}', 'error')
+        # Mostrar productos disponibles para debug
+        flash(f'Errores: {", ".join(set(errores))}', 'error')
         return redirect(url_for('recetario'))
 
     # Convertir cantidad
@@ -825,7 +845,7 @@ def cargar_recetas_iniciales():
             nombre_producto = MAPEO.get(ingrediente)
             if not nombre_producto:
                 continue
-            producto = productos_db.get(nombre_producto)
+            producto = buscar_producto(nombre_producto)
             if not producto:
                 continue
 
