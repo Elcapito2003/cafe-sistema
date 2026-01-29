@@ -627,6 +627,226 @@ def eliminar_ingrediente_receta(id):
     flash('Ingrediente eliminado de la receta', 'success')
     return redirect(url_for('recetario'))
 
+# --- CARGAR RECETAS (una sola vez) ---
+@app.route('/cargar-recetas-iniciales')
+@login_required
+def cargar_recetas_iniciales():
+    if current_user.rol != 'admin':
+        flash('Acceso denegado', 'error')
+        return redirect(url_for('dashboard'))
+
+    # Mapeo de ingredientes
+    MAPEO = {
+        'Café': 'CAFE EN GRANO FRUTA',
+        'Leche': 'LECHE SANTA CLARA DESLACTOSADA',
+        'Leche (6 oz)': 'LECHE SANTA CLARA DESLACTOSADA',
+        'Leche normal': 'LECHE SANTA CLARA DESLACTOSADA',
+        'Salsa': 'TORANI JARABE DE CHOCOLATE OSCURO',
+        'Caramelo': 'TORANI SALSA SABOR CARAMELO',
+        'Matcha': 'Matcha Orgánico_Blend Yabukita-Okumidori',
+        'Miel de agave': 'TIA OFILIA MIEL DE AGAVE',
+        'Miel de Miel de agave de Miel de agave': 'TIA OFILIA MIEL DE AGAVE',
+        'Tónica': 'SCHWEPPES AGUA TONICA',
+        'Miel de abeja': 'MIEL DE ABEJA CARLOTA',
+        'Leche infusionada': 'LECHE INFUSIONADA',
+        'Sal': 'SAL',
+    }
+    IGNORAR = ['Agua', 'Hielo', 'Coral', 'Flor', 'Café molido', 'Twist limón', 'Albahaca']
+
+    RECETAS = [
+        ('Espresso', 'N/A', 'Café', 18.00, 'g'),
+        ('Americano', 'Caliente', 'Café', 18.00, 'g'),
+        ('Americano', 'Frío', 'Café', 18.00, 'g'),
+        ('Latte', '10 oz caliente', 'Café', 18.00, 'g'),
+        ('Latte', '10 oz caliente', 'Leche', 236.64, 'ml'),
+        ('Latte', '12 oz caliente', 'Café', 18.00, 'g'),
+        ('Latte', '12 oz caliente', 'Leche', 295.70, 'ml'),
+        ('Latte', '16 oz caliente', 'Café', 18.00, 'g'),
+        ('Latte', '16 oz caliente', 'Leche', 435.00, 'ml'),
+        ('Latte', '10 oz frío', 'Café', 18.00, 'g'),
+        ('Latte', '10 oz frío', 'Leche', 152.70, 'ml'),
+        ('Latte', '10.8 oz frío', 'Café', 18.00, 'g'),
+        ('Latte', '10.8 oz frío', 'Leche', 152.70, 'ml'),
+        ('Latte', '12 oz frío', 'Café', 18.00, 'g'),
+        ('Latte', '12 oz frío', 'Leche', 190.70, 'ml'),
+        ('Latte', '16 oz frío', 'Café', 18.00, 'g'),
+        ('Latte', '16 oz frío', 'Leche', 267.60, 'ml'),
+        ('Flat White', '8 oz', 'Café', 18.00, 'g'),
+        ('Flat White', '8 oz', 'Leche (6 oz)', 177.42, 'ml'),
+        ('Cappuccino', '8 oz', 'Café', 18.00, 'g'),
+        ('Cappuccino', '8 oz', 'Leche', 80, 'ml'),
+        ('Cappuccino', '12 oz', 'Café', 18.00, 'g'),
+        ('Cappuccino', '12 oz', 'Leche', 118, 'ml'),
+        ('Cappuccino', '16 oz', 'Café', 18.00, 'g'),
+        ('Cappuccino', '16 oz', 'Leche', 158, 'ml'),
+        ('Moka', '10 oz caliente', 'Café', 18.00, 'g'),
+        ('Moka', '10 oz caliente', 'Leche', 210, 'ml'),
+        ('Moka', '10 oz caliente', 'Salsa', 59.14, 'g'),
+        ('Moka', '12 oz caliente', 'Café', 18.00, 'g'),
+        ('Moka', '12 oz caliente', 'Leche', 250, 'ml'),
+        ('Moka', '12 oz caliente', 'Salsa', 59.14, 'g'),
+        ('Moka', '16 oz caliente', 'Café', 18.00, 'g'),
+        ('Moka', '16 oz caliente', 'Leche', 350, 'ml'),
+        ('Moka', '16 oz caliente', 'Salsa', 59.14, 'g'),
+        ('Moka', '10.8 oz frío', 'Café', 18.00, 'g'),
+        ('Moka', '10.8 oz frío', 'Leche', 180, 'ml'),
+        ('Moka', '10.8 oz frío', 'Salsa', 59.14, 'g'),
+        ('Moka', '12 oz frío', 'Café', 18.00, 'g'),
+        ('Moka', '12 oz frío', 'Leche', 200, 'ml'),
+        ('Moka', '12 oz frío', 'Salsa', 59.14, 'g'),
+        ('Moka', '16 oz frío', 'Café', 18.00, 'g'),
+        ('Moka', '16 oz frío', 'Leche', 250, 'ml'),
+        ('Moka', '16 oz frío', 'Salsa', 59.14, 'g'),
+        ('Caramel Latte', '10 oz caliente', 'Café', 18.00, 'g'),
+        ('Caramel Latte', '10 oz caliente', 'Leche', 180, 'ml'),
+        ('Caramel Latte', '10 oz caliente', 'Caramelo', 59.14, 'g'),
+        ('Caramel Latte', '12 oz caliente', 'Café', 18.00, 'g'),
+        ('Caramel Latte', '12 oz caliente', 'Leche', 300, 'ml'),
+        ('Caramel Latte', '12 oz caliente', 'Caramelo', 59.14, 'g'),
+        ('Caramel Latte', '16 oz caliente', 'Café', 18.00, 'g'),
+        ('Caramel Latte', '16 oz caliente', 'Leche', 414, 'ml'),
+        ('Caramel Latte', '16 oz caliente', 'Caramelo', 59.14, 'g'),
+        ('Caramel Latte', '10.8 oz frío', 'Café', 22.00, 'g'),
+        ('Caramel Latte', '10.8 oz frío', 'Leche', 180, 'ml'),
+        ('Caramel Latte', '10.8 oz frío', 'Caramelo', 59.14, 'g'),
+        ('Caramel Latte', '12 oz frío', 'Café', 18.00, 'g'),
+        ('Caramel Latte', '12 oz frío', 'Leche', 236.56, 'ml'),
+        ('Caramel Latte', '12 oz frío', 'Caramelo', 59.14, 'g'),
+        ('Caramel Latte', '16 oz frío', 'Café', 18.00, 'g'),
+        ('Caramel Latte', '16 oz frío', 'Leche', 300, 'ml'),
+        ('Caramel Latte', '16 oz frío', 'Caramelo', 59.14, 'g'),
+        ('Matcha Latte', '9.3 oz frío', 'Matcha', 4, 'g'),
+        ('Matcha Latte', '9.3 oz frío', 'Leche', 170, 'ml'),
+        ('Matcha Latte', '9.3 oz frío', 'Miel de Miel de agave de Miel de agave', 8, 'ml'),
+        ('Matcha Latte', '12 oz frío', 'Matcha', 4, 'g'),
+        ('Matcha Latte', '12 oz frío', 'Leche', 200, 'ml'),
+        ('Matcha Latte', '12 oz frío', 'Miel de Miel de agave de Miel de agave', 8, 'ml'),
+        ('Matcha Latte', '16 oz frío', 'Matcha', 4, 'g'),
+        ('Matcha Latte', '16 oz frío', 'Leche', 250, 'ml'),
+        ('Matcha Latte', '16 oz frío', 'Miel de Miel de agave de Miel de agave', 8, 'ml'),
+        ('Matcha Latte', '10 oz caliente', 'Matcha', 4, 'g'),
+        ('Matcha Latte', '10 oz caliente', 'Leche', 250, 'ml'),
+        ('Matcha Latte', '10 oz caliente', 'Miel de Miel de agave de Miel de agave', 8, 'ml'),
+        ('Matcha Latte', '12 oz caliente', 'Matcha', 4, 'g'),
+        ('Matcha Latte', '12 oz caliente', 'Leche', 320, 'ml'),
+        ('Matcha Latte', '12 oz caliente', 'Miel de Miel de agave de Miel de agave', 8, 'ml'),
+        ('Matcha Latte', '16 oz caliente', 'Matcha', 4, 'g'),
+        ('Matcha Latte', '16 oz caliente', 'Leche', 450, 'ml'),
+        ('Matcha Latte', '16 oz caliente', 'Miel de Miel de agave de Miel de agave', 8, 'ml'),
+        ('Caramelo Salado', '10 oz', 'Café', 18.00, 'g'),
+        ('Caramelo Salado', '10 oz', 'Leche', 180, 'ml'),
+        ('Caramelo Salado', '10 oz', 'Caramelo', 59.14, 'g'),
+        ('Caramelo Salado', '10 oz', 'Sal', 3, 'g'),
+        ('Caramelo Salado', '12 oz', 'Café', 18.00, 'g'),
+        ('Caramelo Salado', '12 oz', 'Leche', 236.56, 'ml'),
+        ('Caramelo Salado', '12 oz', 'Caramelo', 59.14, 'g'),
+        ('Caramelo Salado', '12 oz', 'Sal', 3, 'g'),
+        ('Caramelo Salado', '16 oz', 'Café', 18.00, 'g'),
+        ('Caramelo Salado', '16 oz', 'Leche', 360, 'ml'),
+        ('Caramelo Salado', '16 oz', 'Caramelo', 59.14, 'g'),
+        ('Caramelo Salado', '16 oz', 'Sal', 3, 'g'),
+        ('Matcha Tonic', '10 oz', 'Matcha', 4, 'g'),
+        ('Matcha Tonic', '10 oz', 'Miel de agave', 10, 'g'),
+        ('Matcha Tonic', '10 oz', 'Tónica', 150, 'ml'),
+        ('Matcha Tonic', '12 oz', 'Matcha', 4, 'g'),
+        ('Matcha Tonic', '12 oz', 'Miel de agave', 10, 'g'),
+        ('Matcha Tonic', '12 oz', 'Tónica', 180, 'ml'),
+        ('Matcha Tonic', '16 oz', 'Matcha', 4, 'g'),
+        ('Matcha Tonic', '16 oz', 'Miel de agave', 10, 'g'),
+        ('Matcha Tonic', '16 oz', 'Tónica', 240, 'ml'),
+        ('Black Tea Matcha', '10 oz', 'Matcha', 4, 'g'),
+        ('Black Tea Matcha', '10 oz', 'Miel de agave', 12, 'g'),
+        ('Black Tea Matcha', '10 oz', 'Leche infusionada', 150, 'ml'),
+        ('Black Tea Matcha', '10 oz', 'Leche normal', 45, 'ml'),
+        ('Black Tea Matcha', '12 oz', 'Matcha', 4, 'g'),
+        ('Black Tea Matcha', '12 oz', 'Miel de agave', 12, 'g'),
+        ('Black Tea Matcha', '12 oz', 'Leche infusionada', 180, 'ml'),
+        ('Black Tea Matcha', '12 oz', 'Leche normal', 50, 'ml'),
+        ('Black Tea Matcha', '16 oz', 'Matcha', 4, 'g'),
+        ('Black Tea Matcha', '16 oz', 'Miel de agave', 12, 'g'),
+        ('Black Tea Matcha', '16 oz', 'Leche infusionada', 230, 'ml'),
+        ('Black Tea Matcha', '16 oz', 'Leche normal', 60, 'ml'),
+        ('Honey Spice Flat', '8 oz', 'Café', 18.00, 'g'),
+        ('Honey Spice Flat', '8 oz', 'Miel de abeja', 10, 'ml'),
+        ('Honey Spice Flat', '8 oz', 'Leche', 150, 'ml'),
+    ]
+
+    # Crear productos faltantes
+    if not Producto.query.filter_by(nombre='LECHE INFUSIONADA').first():
+        db.session.add(Producto(nombre='LECHE INFUSIONADA', unidad='lt'))
+    if not Producto.query.filter_by(nombre='SAL').first():
+        db.session.add(Producto(nombre='SAL', unidad='g'))
+    db.session.commit()
+
+    productos_db = {p.nombre: p for p in Producto.query.all()}
+    errores = []
+
+    # Verificar que existan todos los ingredientes
+    for ing_receta, ing_sistema in MAPEO.items():
+        if ing_sistema not in productos_db:
+            errores.append(f'Falta producto: {ing_sistema}')
+
+    if errores:
+        flash(f'Errores: {", ".join(errores)}', 'error')
+        return redirect(url_for('recetario'))
+
+    # Convertir cantidad
+    def convertir(cantidad, unidad_receta, unidad_producto):
+        unidad_receta = (unidad_receta or '').lower()
+        unidad_producto = (unidad_producto or '').lower()
+        if unidad_receta == 'g' and unidad_producto in ('kg', 'kilo', 'kilos'):
+            return cantidad / 1000
+        if unidad_receta == 'ml' and unidad_producto in ('lt', 'l', 'litro', 'litros'):
+            return cantidad / 1000
+        return cantidad
+
+    # Agrupar por bebida
+    recetas_agrupadas = {}
+    for bebida, tamano, ingrediente, cantidad, unidad in RECETAS:
+        if ingrediente in IGNORAR:
+            continue
+        nombre_pv = f'{bebida} {tamano}' if tamano and tamano != 'N/A' else bebida
+        if nombre_pv not in recetas_agrupadas:
+            recetas_agrupadas[nombre_pv] = []
+        recetas_agrupadas[nombre_pv].append((ingrediente, cantidad, unidad))
+
+    creados_pv = 0
+    creados_ing = 0
+
+    for nombre_pv, ingredientes in recetas_agrupadas.items():
+        pv = ProductoVenta.query.filter_by(nombre=nombre_pv).first()
+        if not pv:
+            pv = ProductoVenta(nombre=nombre_pv)
+            db.session.add(pv)
+            db.session.flush()
+            creados_pv += 1
+
+        for ingrediente, cantidad, unidad in ingredientes:
+            nombre_producto = MAPEO.get(ingrediente)
+            if not nombre_producto:
+                continue
+            producto = productos_db.get(nombre_producto)
+            if not producto:
+                continue
+
+            existente = RecetaIngrediente.query.filter_by(
+                producto_venta_id=pv.id, producto_id=producto.id
+            ).first()
+
+            if not existente:
+                cantidad_conv = convertir(cantidad, unidad, producto.unidad)
+                ri = RecetaIngrediente(
+                    producto_venta_id=pv.id,
+                    producto_id=producto.id,
+                    cantidad=cantidad_conv
+                )
+                db.session.add(ri)
+                creados_ing += 1
+
+    db.session.commit()
+    flash(f'Recetas cargadas: {creados_pv} productos de venta, {creados_ing} ingredientes', 'success')
+    return redirect(url_for('recetario'))
+
 # --- MERMAS ---
 @app.route('/mermas', methods=['GET', 'POST'])
 @login_required
